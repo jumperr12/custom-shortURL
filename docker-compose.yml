@@ -44,8 +44,10 @@ services:
       AUTH_URL: ${AUTH_URL}
       APP_URL: ${APP_URL}
       GEOIP_DB_PATH: ${GEOIP_DB_PATH}
-    # run migrations then start. for prod swap `migrate dev` -> `migrate deploy`
-    command: sh -c "npx prisma migrate deploy && node server.js"
+    # `db push` syncs schema → db without a migration history. fine for self-host.
+    # for real prod with multi-instance deploys, switch to `prisma migrate deploy`
+    # and commit a prisma/migrations/ folder.
+    command: sh -c "npx prisma db push --accept-data-loss && npx next start -p 3000"
     ports:
       - "3000:3000"
     volumes:
@@ -61,7 +63,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
       GEOIP_DB_PATH: ${GEOIP_DB_PATH}
-    command: ["node_modules/.bin/tsx", "workers/click-drainer.ts"]
+    command: ["npx", "tsx", "workers/click-drainer.ts"]
     volumes:
       - ./data:/app/data:ro
 

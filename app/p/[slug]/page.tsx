@@ -21,8 +21,8 @@ export default async function GatePage({
 
   const h = await headers();
   const domain = await resolveDomain(h.get("host"));
-  const link = await db.link.findUnique({
-    where: { domainId_slug: { domainId: domain?.id ?? "", slug } },
+  const link = await db.link.findFirst({
+    where: { domainId: domain?.id ?? null, slug },
     select: { id: true, passwordHash: true, isActive: true, expiresAt: true, targetUrl: true },
   });
   if (!link || !link.isActive) return <p className="p-8">not found</p>;

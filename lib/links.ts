@@ -22,8 +22,11 @@ export async function resolveLink(domainId: string | null, slug: string): Promis
     try { return JSON.parse(cached) as CachedLink; } catch { /* fall through */ }
   }
 
-  const row = await db.link.findUnique({
-    where: { domainId_slug: { domainId: domainId ?? "", slug } },
+  // composite unique with a nullable column doesn't work via findUnique in prisma
+  // — null != null in sql, so the index doesn't dedupe and the typed lookup misses.
+  // findFirst on the same (domainId, slug) index is the right tool here.
+  const row = await db.link.findFirst({
+    where: { domainId: domainId ?? null, slug },
     select: {
       id: true, targetUrl: true, expiresAt: true,
       passwordHash: true, isActive: true,
