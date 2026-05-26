@@ -1,0 +1,30 @@
+node_modules/
+.next/
+.next-*/
+out/
+build/
+dist/
+
+# env
+.env
+.env.local
+.env.*.local
+
+# prisma
+prisma/*.db
+prisma/*.db-journal
+
+# logs
+*.log
+npm-debug.log*
+
+# editors
+.vscode/
+.idea/
+.DS_Store
+
+# geoip db (download at deploy time)
+data/GeoLite2-City.mmdb
+
+# docker
+.docker-data/

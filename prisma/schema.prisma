@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+
+  links     Link[]
+  domains   Domain[]
+  apiTokens ApiToken[]
+}
+
+// custom branded hostnames (e.g. go.acme.com). slugs are unique *per domain*,
+// so two users can both own "/launch" on different domains.
+model Domain {
+  id                String   @id @default(cuid())
+  hostname          String   @unique
+  userId            String
+  verified          Boolean  @default(false)
+  verificationToken String   // user adds this as a TXT record to prove ownership
+  createdAt         DateTime @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  links Link[]
+
+  @@index([userId])
+}
+
+model Link {
+  id           String    @id @default(cuid())
+  slug         String
+  domainId     String?   // null = served on the app's default host
+  targetUrl    String
+  title        String?
+  userId       String
+  expiresAt    DateTime?
+  passwordHash String?   // bcrypt; null = no gate
+  isActive     Boolean   @default(true)
+  clickCount   Int       @default(0)  // denormalized counter; truth is ClickEvent
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domain Domain? @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  clicks ClickEvent[]
+
+  // a (domain, slug) pair is the routing key. unique on it = the redirect lookup
+  @@unique([domainId, slug])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// one row per resolved redirect. keep narrow — this table grows fastest
+model ClickEvent {
+  id        String   @id @default(cuid())
+  linkId    String
+  ts        DateTime @default(now())
+  ipHash    String?  // sha256(ip + daily salt) — uniques without storing pii
+  country   String?  // iso-2
+  city      String?
+  referrer  String?
+  userAgent String?
+  device    String?  // mobile / tablet / desktop / bot
+  browser   String?
+  os        String?
+
+  link Link @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId, ts])
+  @@index([ts])
+}
+
+model ApiToken {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique // store hash, show secret once at creation
+  name       String
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

@@ -1,0 +1,14 @@
+node_modules
+.next
+.next-*
+.git
+.env
+.env.*
+!.env.example
+data/*.mmdb
+*.log
+.docker-data
+.vscode
+.idea
+.DS_Store
+README.md
